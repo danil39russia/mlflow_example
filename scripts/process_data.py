@@ -70,15 +70,24 @@ def process_data():
         mlflow.log_param('data_test_size_actual', int(len(y_test)))
 
     logger.info('Начали сохранять датасеты')
-    os.makedirs(os.path.dirname(DATASET_PATH_PATTERN), exist_ok=True)
+    data_dir = os.path.dirname(DATASET_PATH_PATTERN)
+    os.makedirs(data_dir, exist_ok=True)
+
+    saved_paths = []
     for split, split_name in zip(
         (X_train, X_test, y_train, y_test),
         ('X_train', 'X_test', 'y_train', 'y_test'),
     ):
-        pd.DataFrame(split).to_csv(
-            DATASET_PATH_PATTERN.format(split_name=split_name), index=False
-        )
+        split_path = DATASET_PATH_PATTERN.format(split_name=split_name)
+        pd.DataFrame(split).to_csv(split_path, index=False)
+        saved_paths.append(split_path)
+
     logger.info('Успешно сохранили датасеты!')
+
+    # логирование финальных датасетов как артефактов MLflow
+    if mlflow.active_run() is not None:
+        for split_path in saved_paths:
+            mlflow.log_artifact(split_path, artifact_path='datasets')
 
 
 if __name__ == '__main__':
